@@ -94,7 +94,7 @@ const fetch = extendedFetch({
 
 const spinner = ora(`Searching for ${COURSE_SLUG}...`).start()
 const course = await fetch.json(`${FEM_API_ENDPOINT}/kabuki/courses/${COURSE_SLUG}`).catch(err => {
-    if (err.message.includes('404')) {
+    if (err.message.includes('HTTP Error 404')) {
         return { code: 404 }
     }
     spinner.fail(`Error fetching course: ${err.message}`)
@@ -156,7 +156,7 @@ for (const [lesson, episodes] of Object.entries(lessons)) {
             process.exit(1)
         }
         m3u8RequestUrl = toAbsoluteUrl(m3u8RequestUrl)
-        
+
         let availableQualities
         try {
             availableQualities = await fetch.text(m3u8RequestUrl)
