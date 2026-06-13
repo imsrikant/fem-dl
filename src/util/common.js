@@ -41,8 +41,11 @@ export function extendedFetch(options, cookies) {
 	actualFetch = extendFetchCookie(actualFetch, cookies)
 	actualFetch = extendFetchRetry(actualFetch)
 
-	const fetch = (url, returnType) => actualFetch(url, options).then((res) => {
-		if (!res.ok) throw res
+	const fetch = (url, returnType) => actualFetch(url, options).then(async (res) => {
+		if (!res.ok) {
+			const text = await res.text().catch(() => '');
+			throw new Error(`HTTP Error ${res.status} on ${url}: ${text}`);
+		}
 		if (returnType === 'json') return res.json()
 		if (returnType === 'text') return res.text()
 		if (returnType === 'binary') return res.arrayBuffer().then(Buffer.from)

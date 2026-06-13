@@ -93,7 +93,13 @@ const fetch = extendedFetch({
 }, cookies)
 
 const spinner = ora(`Searching for ${COURSE_SLUG}...`).start()
-const course = await fetch.json(`${FEM_API_ENDPOINT}/kabuki/courses/${COURSE_SLUG}`)
+const course = await fetch.json(`${FEM_API_ENDPOINT}/kabuki/courses/${COURSE_SLUG}`).catch(err => {
+    if (err.message.includes('404')) {
+        return { code: 404 }
+    }
+    spinner.fail(`Error fetching course: ${err.message}`)
+    process.exit(1)
+})
 
 if (course.code === 404) {
     spinner.fail(`Couldn't find this course "${COURSE_SLUG}"`)
@@ -141,9 +147,23 @@ for (const [lesson, episodes] of Object.entries(lessons)) {
         }
 
 
-        let { url: m3u8RequestUrl } = await fetch.json(episode.url)
+        let m3u8RequestUrl
+        try {
+            const data = await fetch.json(episode.url)
+            m3u8RequestUrl = data.url
+        } catch (err) {
+            spinner.fail(`Failed to fetch video URL for "${episode.title}": ${err.message}`)
+            process.exit(1)
+        }
         m3u8RequestUrl = toAbsoluteUrl(m3u8RequestUrl)
-        const availableQualities = await fetch.text(m3u8RequestUrl)
+        
+        let availableQualities
+        try {
+            availableQualities = await fetch.text(m3u8RequestUrl)
+        } catch (err) {
+            spinner.fail(`Failed to fetch qualities for "${episode.title}": ${err.message}`)
+            process.exit(1)
+        }
 
         // Automatically downgrade quality when preferred quality not found
         const qualities = Object.values(QUALITY_FORMAT)
@@ -196,7 +216,13 @@ for (const [lesson, episodes] of Object.entries(lessons)) {
         if (INCLUDE_CAPTION) {
             spinner.text = `Downloading captions for ${episode.title}...`
 
-            const captions = await fetch.text(`${FEM_CAPTIONS_ENDPOINT}/assets/courses/${course.datePublished}-${course.slug}/${episode.index}-${episode.slug}.${CAPTION_EXT}`)
+            let captions
+            try {
+                captions = await fetch.text(`${FEM_CAPTIONS_ENDPOINT}/assets/courses/${course.datePublished}-${course.slug}/${episode.index}-${episode.slug}.${CAPTION_EXT}`)
+            } catch (err) {
+                spinner.fail(`Failed to fetch captions for "${episode.title}": ${err.message}`)
+                process.exit(1)
+            }
 
             await fs.writeFile(captionPath, captions)
 
