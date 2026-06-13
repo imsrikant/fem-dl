@@ -80,6 +80,7 @@ const headers = {
     'Origin': 'https://frontendmasters.com',
     'Referer': 'https://frontendmasters.com/'
 }
+const toAbsoluteUrl = (value, base = FEM_ENDPOINT) => new URL(value, base).toString()
 
 const cookies = new extendFetchCookie.toughCookie.CookieJar()
 
@@ -103,7 +104,7 @@ if (course.code === 404) {
 for (const data of Object.values(course.lessonData)) course.lessonElements[course.lessonElements.findIndex(x => x === data.index)] = {
     title: data.title,
     slug: data.slug,
-    url: `${data.sourceBase}/source?f=${PLAYLIST_EXT}`,
+    url: toAbsoluteUrl(`${data.sourceBase}/source?f=${PLAYLIST_EXT}`),
     index: data.index
 }
 
@@ -141,6 +142,7 @@ for (const [lesson, episodes] of Object.entries(lessons)) {
 
 
         let { url: m3u8RequestUrl } = await fetch.json(episode.url)
+        m3u8RequestUrl = toAbsoluteUrl(m3u8RequestUrl)
         const availableQualities = await fetch.text(m3u8RequestUrl)
 
         // Automatically downgrade quality when preferred quality not found
@@ -166,7 +168,7 @@ for (const [lesson, episodes] of Object.entries(lessons)) {
         }
 
         const streamQuality = QUALITY.find(it => availableQualities.includes(it))
-        const m3u8Url = [...m3u8RequestUrl.split('/').slice(0, -1), `${streamQuality}.${PLAYLIST_EXT}`].join('/')
+        const m3u8Url = new URL(`${streamQuality}.${PLAYLIST_EXT}`, m3u8RequestUrl).toString()
 
         headers['Cookie'] = await cookies.getCookieString(m3u8Url)
 
