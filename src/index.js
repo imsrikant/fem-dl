@@ -107,11 +107,14 @@ if (course.code === 404) {
 }
 
 
-for (const data of Object.values(course.lessonData)) course.lessonElements[course.lessonElements.findIndex(x => x === data.index)] = {
-    title: data.title,
-    slug: data.slug,
-    url: toAbsoluteUrl(`${data.sourceBase}/source?f=${PLAYLIST_EXT}`),
-    index: data.index
+for (const data of Object.values(course.lessonData)) {
+    const sourceBase = data.sourceBase || `${FEM_API_ENDPOINT}/kabuki/video/${data.hash || data.statsId}`
+    course.lessonElements[course.lessonElements.findIndex(x => x === data.index)] = {
+        title: data.title,
+        slug: data.slug,
+        url: toAbsoluteUrl(`${sourceBase}/source?f=${PLAYLIST_EXT}`),
+        index: data.index
+    }
 }
 
 const [lessons, totalEpisodes] = course.lessonElements.reduce((acc, cur) => {
